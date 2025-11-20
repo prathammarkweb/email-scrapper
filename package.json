@@ -1,11 +1,7 @@
 {
   "name": "email-scraper-alignerco",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
-  "scripts": {
-    "start": "node api/fetch.js"
-  },
   "dependencies": {
     "puppeteer": "^22.6.0"
   }
