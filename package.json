@@ -1,8 +1,11 @@
 {
-  "name": "email-scrapper-eta",
+  "name": "email-scraper",
   "version": "1.0.0",
-  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "@playwright/test": "^1.48.2"
+    "express": "^4.18.2",
+    "puppeteer": "^22.0.0"
   }
 }
