@@ -1,6 +1,5 @@
-const { join } = require("path");
+const { chromium } = require("playwright");
 
-/** @type {import("puppeteer").Configuration} */
-module.exports = {
-  cacheDirectory: join(__dirname, ".cache", "puppeteer")
-};
+const browser = await chromium.launch({
+  headless: true,
+});
