@@ -11,33 +11,46 @@ app.get("/", (req, res) => {
 app.get("/api/fetch", async (req, res) => {
   try {
     const { url } = req.query;
-    if (!url) return res.status(400).json({ error: "URL is required" });
+    if (!url) {
+      return res.status(400).json({ error: "Missing ?url= parameter" });
+    }
 
-    console.log("Fetching:", url);
+    console.log("Launching browser for:", url);
 
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-gpu"
+        "--disable-gpu",
+        "--single-process"
       ]
     });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000
+    });
 
-    const text = await page.evaluate(() => document.body.innerText);
+    const html = await page.content();
     await browser.close();
 
-    res.json({ success: true, url, text });
+    // Extract simple emails
+    const emails = [...new Set(
+      (html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g) || [])
+    )];
 
-  } catch (err) {
-    console.error("Error:", err.message);
-    res.status(500).json({ error: err.message });
+    res.json({ url, emails });
+
+  } catch (error) {
+    console.error("Error in /api/fetch:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log("Server running on port " + port));
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
