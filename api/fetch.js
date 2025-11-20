@@ -7,34 +7,42 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Please provide ?url=" });
     }
 
+    // Use bundled Chromium path
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
+      product: "chrome",
+      channel: "chromium",
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--no-first-run",
-        "--no-zygote"
+        "--no-zygote",
+        "--single-process"
       ]
     });
 
     const page = await browser.newPage();
-    await page.goto(targetUrl, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(targetUrl.startsWith("http") ? targetUrl : "https://" + targetUrl, {
+      waitUntil: "networkidle2",
+      timeout: 60000
+    });
 
     const html = await page.content();
 
-    const emails = [...new Set(html.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g))];
+    const emails =
+      html.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || [];
 
     await browser.close();
 
-    res.json({
+    return res.status(200).json({
       url: targetUrl,
-      emails: emails || [],
+      emails: [...new Set(emails)],
       success: true
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
