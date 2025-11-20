@@ -1,6 +1,14 @@
 {
-  "version": 3,
+  "version": 2,
+  "functions": {
+    "api/fetch.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
-    { "src": "/fetch", "dest": "api/fetch.js" }
+    {
+      "src": "/fetch",
+      "dest": "/api/fetch.js"
+    }
   ]
 }
