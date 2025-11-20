@@ -8,7 +8,15 @@ export default async function handler(req, res) {
     }
 
     const browser = await puppeteer.launch({
-      headless: "new"
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote"
+      ]
     });
 
     const page = await browser.newPage();
