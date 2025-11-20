@@ -1,8 +1,12 @@
 {
-  "name": "email-scraper-alignerco",
+  "name": "email-scrapper-eta",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "puppeteer": "^22.6.0"
+    "puppeteer": "22.6.0"
+  },
+  "puppeteer": {
+    "product": "chrome",
+    "default_browser": "chromium"
   }
 }
