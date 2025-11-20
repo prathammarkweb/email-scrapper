@@ -1,42 +1,36 @@
-import express from "express";
-import { chromium } from "@playwright/test";
+const express = require("express");
+const axios = require("axios");
+const cheerio = require("cheerio");
+const cors = require("cors");
 
 const app = express();
+
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Email Scraper Running ✔");
 });
 
-app.get("/api/fetch", async (req, res) => {
+app.post("/scrape", async (req, res) => {
   try {
-    const { url } = req.query;
-    if (!url) return res.status(400).json({ error: "Missing ?url= parameter" });
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL is required" });
 
-    console.log("Scraping:", url);
+    const response = await axios.get(url, { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } });
+    const $ = cheerio.load(response.data);
 
-    const browser = await chromium.launch({
-      headless: true,
-    });
+    const html = $.html();
 
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "load", timeout: 60000 });
+    const emails = [...html.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)]
+      .map((m) => m[0])
+      .filter((v, i, a) => a.indexOf(v) === i);
 
-    const html = await page.content();
-    await browser.close();
-
-    const emails = [
-      ...new Set(
-        (html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g) || [])
-      ),
-    ];
-
-    res.json({ url, emails });
+    res.json({ emails });
   } catch (err) {
-    console.error("Scraper error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log("Server running on port", port));
+app.listen(port, () => console.log("Server running on port " + port));
