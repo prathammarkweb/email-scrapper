@@ -3,11 +3,17 @@ const puppeteer = require("puppeteer");
 
 const app = express();
 
+// DEFAULT ROUTE (so / shows a valid message)
+app.get("/", (req, res) => {
+  res.send("Email Scraper is Running ✔");
+});
+
+// MAIN API ROUTE
 app.get("/api/fetch", async (req, res) => {
   try {
     const targetURL = req.query.url;
     if (!targetURL) {
-      return res.json({ error: "Missing ?url=" });
+      return res.status(400).json({ error: "Missing ?url=" });
     }
 
     const browser = await puppeteer.launch({
@@ -16,31 +22,34 @@ app.get("/api/fetch", async (req, res) => {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-zygote",
-        "--single-process"
-      ]
+      ],
     });
 
     const page = await browser.newPage();
-    await page.goto(targetURL, { waitUntil: "networkidle2", timeout: 60000 });
+
+    await page.goto(targetURL, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
 
     const html = await page.content();
 
-    const emailMatch = html.match(
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+    const emails = html.match(
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g
     );
 
     await browser.close();
 
-    return res.json({
-      email: emailMatch ? emailMatch[0] : null,
-      url: targetURL
+    res.json({
+      url: targetURL,
+      emails: emails || [],
     });
-
   } catch (error) {
-    return res.json({ error: error.message });
+    res.json({ error: error.message });
   }
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+// START SERVER
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
