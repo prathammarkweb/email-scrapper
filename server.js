@@ -1,20 +1,24 @@
-const express = require("express");
-const puppeteer = require("puppeteer");
+import express from "express";
+import puppeteer from "puppeteer";
 
 const app = express();
+app.use(express.json());
 
-// DEFAULT ROUTE (so / shows a valid message)
+// Root
 app.get("/", (req, res) => {
-  res.send("Email Scraper is Running ✔");
+  res.send("Email Scraper Running ✔");
 });
 
-// MAIN API ROUTE
+// API route
 app.get("/api/fetch", async (req, res) => {
   try {
-    const targetURL = req.query.url;
-    if (!targetURL) {
-      return res.status(400).json({ error: "Missing ?url=" });
+    const { url } = req.query;
+
+    if (!url) {
+      return res.status(400).json({ error: "URL is required" });
     }
+
+    console.log("Fetching:", url);
 
     const browser = await puppeteer.launch({
       headless: "new",
@@ -22,34 +26,32 @@ app.get("/api/fetch", async (req, res) => {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-      ],
+        "--disable-gpu",
+        "--disable-software-rasterizer"
+      ]
     });
 
     const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    await page.goto(targetURL, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
-
-    const html = await page.content();
-
-    const emails = html.match(
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g
-    );
+    const content = await page.evaluate(() => document.body.innerText);
 
     await browser.close();
 
     res.json({
-      url: targetURL,
-      emails: emails || [],
+      success: true,
+      url,
+      content
     });
-  } catch (error) {
-    res.json({ error: error.message });
+
+  } catch (err) {
+    console.error("Scraper Error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// START SERVER
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+// Render-specified port
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
